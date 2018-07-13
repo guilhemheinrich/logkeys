@@ -595,25 +595,20 @@ int main(int argc, char **argv)
           (ctrl_in_effect && (scan_code == KEY_C || scan_code == KEY_D))) {
         if (ctrl_in_effect)
           inc_size += fprintf(out, "%lc", char_keys[to_char_keys_index(scan_code)]);  // log C or D
-        if (args.flags & FLAG_NO_TIMESTAMPS)
+        if (args.flags & FLAG_NO_TIMESTAMPS) {
+        // add current active window
+        std::string active_window =  execute(COMMAND_GET_ACTIVE_WINDOW);
+        inc_size += fprintf(out, " [ %s ]", active_window.c_str());
           inc_size += fprintf(out, "\n");
+        }
         else {
+        // add current active window
+        std::string active_window =  execute(COMMAND_GET_ACTIVE_WINDOW);
+        inc_size += fprintf(out, " [ %s ]", active_window.c_str());
           strftime(timestamp, sizeof(timestamp), "\n" TIME_FORMAT, localtime(&event.time.tv_sec));
           inc_size += fprintf(out, "%s", timestamp);  // then newline and timestamp
         }
 
-        // add current active window
-
-        std::string active_window =  execute(COMMAND_GET_ACTIVE_WINDOW);
-        // std::string active_window =  execute(std::string("ls").c_str());
-        // const char* active_window =  "Hello";
-        inc_size += fprintf(out, " [ %s ]", active_window.c_str());
-        // inc_size += fprintf(out, " 1 [ %s ]", execute(COMMAND_GET_ACTIVE_WINDOW).c_str());
-        // inc_size += fprintf(out, " 2 [ %s ]", execute(COMMAND_GET_ACTIVE_WINDOW));
-        // inc_size += fprintf(out, " 3 [ %s ]", execute(COMMAND_GET_ACTIVE_WINDOW_BIS));
-        // inc_size += fprintf(out, " 4 [ %s ]", execute(COMMAND_GET_ACTIVE_WINDOW_BIS).c_str());
-        // inc_size += fprintf(out, " 5 [ %s ]", std::string(execute(COMMAND_GET_ACTIVE_WINDOW_BIS)));
-        // inc_size += fprintf(out, " 6 [ %s ]", std::string(execute(COMMAND_GET_ACTIVE_WINDOW_BIS)).c_str());
 
 
 
